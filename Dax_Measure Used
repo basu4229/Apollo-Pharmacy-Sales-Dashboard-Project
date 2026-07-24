@@ -1,0 +1,264 @@
+KPIs
+1.Avg Bill Value = 
+DIVIDE(
+    [Relized Revenue],
+    [Transaction]
+)
+2.COGS = SUM(Fact_Sales[COGS])
+
+3.Discount Amount = 
+SUMX(
+    Fact_Sales,
+    Fact_Sales[Quantity]*Fact_Sales[Unit_Price]*Fact_Sales[Discount_Pct]
+)
+4.Discount% = 
+DIVIDE(
+    [Discount Amount],
+    [Gross Sales]
+)
+5.Gross Margin = [Relized Revenue] -[COGS]
+
+6.Gross Margin % = 
+DIVIDE(
+    [Gross Margin],
+[Relized Revenue]
+)
+7.Gross Sales = 
+SUMX(
+    Fact_Sales,
+    Fact_Sales[Quantity]* Fact_Sales[Unit_Price]
+)
+8.Net Sales = [Gross Sales] - [Discount Amount]
+9.Relized Revenue = SUM(Fact_Sales[Sales_After_Returns])
+10.Return% = DIVIDE(
+    [ReturnAmount],
+    [Net Sales]
+)
+11.ReturnAmount = sum(Fact_Sales[Return_Amount])
+12.Transaction = DISTINCTCOUNT(Fact_Sales[Transaction_ID])
+13.Margin At Risk = 
+VAR _Threshold = 0.25
+
+VAR _Transactiontable =
+ADDCOLUMNS(
+    VALUES(
+        Fact_Sales[Transaction_ID]),
+        "@Revenue",[Relized Revenue],
+        "@marginpct",[Gross Margin]
+)
+RETURN
+SUMX(
+    FILTER(_Transactiontable,
+    [@marginpct] < _Threshold
+    && NOT ISBLANK([@Revenue])
+    ),[@Revenue]
+)
+14.Relized Revenue Lakhs = 
+DIVIDE(
+    [Relized Revenue],
+    100000
+)
+15.Cumulative return % = 
+DIVIDE(
+    [Cumulative return Amount],
+    [Total return amount selected]
+)
+16. Cumulative return Amount = 
+VAR _Currentrank = [Return reason rank]
+
+RETURN
+
+SUMX(
+    FILTER(
+        ALL(Dim_ReturnReason[Return_Reason]),
+        [Return reason rank] <= _Currentrank),
+        [ReturnAmount]
+)
+17.Total return amount selected = 
+CALCULATE(
+    [ReturnAmount],
+    ALL(Dim_ReturnReason[Return_Reason])
+)
+
+Dim_Date = 
+
+VAR _Mindate = MIN(Fact_Sales[Transaction Date])
+VAR _Maxdate = MAX(Fact_Sales[Transaction Date])
+
+RETURN
+
+ADDCOLUMNS(
+    CALENDAR(_Mindate, _Maxdate),
+    "Year", YEAR([Date]),
+    "Monthno", MONTH([Date]),
+    "Monthname", FORMAT([Date], "MMM"),
+    "Quater", "Q" & QUARTER([Date]),
+    "MonthYear", FORMAT([Date], "MMM-YYYY"),
+    "Monthyearsort", YEAR([Date]) * 100 + MONTH([Date]),
+    "Day", DAY([Date]),
+    "Dayname", FORMAT([Date], "DDD"),
+    "Day of the week no", WEEKDAY([Date], 2)
+) 
+
+CHARTS
+1.Avg Bill Value MoM% = 
+DIVIDE(
+    [Avg Bill Value] - [Avg Bill Value PM],
+    [Avg Bill Value PM]
+)
+
+2.Avg Bill Value PM = 
+CALCULATE(
+    [Avg Bill Value],
+    DATEADD(
+        Dim_Date[Date],
+        -1,MONTH
+    )
+)
+3. Avg Bill Value Var = 
+VAR MoMvalue = [Avg Bill Value MoM%]
+RETURN
+SWITCH(
+    TRUE(),
+    ISBLANK(MoMvalue),BLANK(),
+    MoMvalue >0,
+    UNICHAR(9650) & " " & FORMAT(MoMvalue, "0.0%"),
+    MoMvalue <0,
+    UNICHAR(9660) & " " & FORMAT(MoMvalue, "0.0%"),
+    UNICHAR(8212) & "0.0%"
+)
+4.COGS MoM% = 
+DIVIDE(
+    [COGS] - [COGS PM],
+    [COGS PM]
+)
+5.COGS PM = 
+CALCULATE(
+    [COGS],
+    DATEADD(
+        Dim_Date[Date],
+        -1,MONTH
+    )
+)
+6.COGS Var = 
+VAR MoMvalue = [COGS MoM%]
+RETURN
+SWITCH(
+    TRUE(),
+    ISBLANK(MoMvalue),BLANK(),
+    MoMvalue >0,
+    UNICHAR(9650) & " " & FORMAT(MoMvalue, "0.0%"),
+    MoMvalue <0,
+    UNICHAR(9660) & " " & FORMAT(MoMvalue, "0.0%"),
+    UNICHAR(8212) & "0.0%"
+)
+7.Discount% MoM% = 
+DIVIDE(
+    [Discount%] - [Discount% PM],
+    [Discount% PM]
+)
+8.Discount% PM = 
+CALCULATE(
+    [Discount%],
+    DATEADD(
+        Dim_Date[Date],
+        -1,MONTH
+    )
+)
+9.Discount% Var = 
+VAR MoMvalue = [Discount% MoM%]
+RETURN
+SWITCH(
+    TRUE(),
+    ISBLANK(MoMvalue),BLANK(),
+    MoMvalue >0,
+    UNICHAR(9650) & " " & FORMAT(MoMvalue, "0.0%"),
+    MoMvalue <0,
+    UNICHAR(9660) & " " & FORMAT(MoMvalue, "0.0%"),
+    UNICHAR(8212) & "0.0%"
+)
+10.Gross Margin MoM% = 
+DIVIDE(
+    [Gross Margin] - [Gross Margin PM],
+    [Gross Margin PM]
+)
+11.Gross Margin PM = 
+CALCULATE(
+    [Gross Margin],
+    DATEADD(
+        Dim_Date[Date],
+        -1,MONTH
+    )
+)
+12.Gross Margin Var = 
+VAR MoMvalue = [Gross Margin MoM%]
+RETURN
+SWITCH(
+    TRUE(),
+    ISBLANK(MoMvalue),BLANK(),
+    MoMvalue >0,
+    UNICHAR(9650) & " " & FORMAT(MoMvalue, "0.0%"),
+    MoMvalue <0,
+    UNICHAR(9660) & " " & FORMAT(MoMvalue, "0.0%"),
+    UNICHAR(8212) & "0.0%"
+)
+13.Relized Revenue MoM% = 
+DIVIDE(
+    [Relized Revenue] - [Relized Revenue PM],
+    [Relized Revenue PM]
+)
+14.Relized Revenue PM = 
+CALCULATE(
+    [Relized Revenue],
+    DATEADD(
+        Dim_Date[Date],
+        -1,MONTH
+    )
+)
+15.Relized Revenue Var = 
+VAR MoMvalue = [Relized Revenue MoM%]
+RETURN
+SWITCH(
+    TRUE(),
+    ISBLANK(MoMvalue),BLANK(),
+    MoMvalue >0,
+    UNICHAR(9650) & " " & FORMAT(MoMvalue, "0.0%"),
+    MoMvalue <0,
+    UNICHAR(9660) & " " & FORMAT(MoMvalue, "0.0%"),
+    UNICHAR(8212) & "0.0%"
+)
+16.Revenue Bridge Value = 
+VAR _Selectedstep = SELECTEDVALUE('Revenue Step'[Step])
+RETURN
+SWITCH(
+    _Selectedstep,
+    "GrossSales",[Gross Sales],
+    "Discount Leakage", -[Discount Amount],
+    "Return Leakage", -[ReturnAmount]
+)
+17.Transaction MoM% = 
+DIVIDE(
+    [Transaction] - [Transaction PM],
+    [Transaction PM]
+)
+18.Transaction PM = 
+CALCULATE(
+    [Transaction],
+    DATEADD(
+        Dim_Date[Date],
+        -1,MONTH
+    )
+)
+19.Transaction Var = 
+VAR MoMvalue = [Transaction MoM%]
+RETURN
+SWITCH(
+    TRUE(),
+    ISBLANK(MoMvalue),BLANK(),
+    MoMvalue >0,
+    UNICHAR(9650) & " " & FORMAT(MoMvalue, "0.0%"),
+    MoMvalue <0,
+    UNICHAR(9660) & " " & FORMAT(MoMvalue, "0.0%"),
+    UNICHAR(8212) & "0.0%"
+)
+
